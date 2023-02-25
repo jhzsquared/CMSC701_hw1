@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option java_outer_classname = "SuffixArrayProto";
+
+message SuffixMessage {
+  string genome = 1;
+  repeated int32 suffixArray = 2;
+  map<string, indexInterval> preftab = 3;
+}
+message indexInterval {
+  repeated int32 indices = 4;
+}

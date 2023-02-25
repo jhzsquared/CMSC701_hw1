@@ -1,5 +1,5 @@
-// java -cp ":/home/jzhu/umd/CMSC701/hw1_suffixarray/src/protobuf-java-3.21.12.jar" buildsa "/home/jzhu/umd/CMSC701/hw1_suffixarray/data/ecoli.fa" "/home/jzhu/umd/CMSC701/hw1_suffixarray/data/ecoli_sa.bin"
-// javac -cp ":/home/jzhu/umd/CMSC701/hw1_suffixarray/src/protobuf-java-3.21.12.jar" buildsa.java
+// java -cp ":/home/jzhu/umd/CMSC701/hw1_suffixarray/lib/protobuf-java-3.21.12.jar" buildsa "/home/jzhu/umd/CMSC701/hw1_suffixarray/data/ecoli.fa" "/home/jzhu/umd/CMSC701/hw1_suffixarray/data/ecoli_sa.bin"
+// javac -cp ":/home/jzhu/umd/CMSC701/hw1_suffixarray/lib/protobuf-java-3.21.12.jar" buildsa.java
 
 import java.io.*;
 import java.util.*;
@@ -48,17 +48,14 @@ public class buildsa {
         
     }
     
-    static public HashMap<String, ArrayList<Integer>> CreatePrefixTable(int[] suffixArray, String genome, int k){
+    static public Map<String, SuffixArrayProto.indexInterval> CreatePrefixTable(int[] suffixArray, String genome, int k){
         // Create prefix table: key: prefix, value: [start-inclusive, end-exclusive]) 
-        HashMap<String,ArrayList<Integer>> prefixTable = new HashMap<String, ArrayList<Integer>>(); 
+        Map<String,SuffixArrayProto.indexInterval> prefixTable = new HashMap<String, SuffixArrayProto.indexInterval>(); 
         //initialize 
         String prefix = ""; 
         String new_prefix;
-        // ArrayList<Integer> interval = new ArrayList<Integer>(2);
-        // interval.add(-1);
-        // interval.add(-1);
         int startIndex = 1;
-        int i=k; //start with index of size k
+        int i=1;
         boolean first = true;
         while (i < suffixArray.length){
             if (suffixArray[i]<=(genome.length()-k)){ //not too short substring
@@ -69,10 +66,7 @@ public class buildsa {
                     if (first){//don't save
                     } else{ //save results 
                         if (prefix.length()==k){ //so we can ignore the short prefixes
-                            // interval.set(0, startIndex);
-                            // interval.set(1, i);
-                            // prefixTable.put(prefix, interval);
-                            prefixTable.put(prefix, new ArrayList<>(Arrays.asList(startIndex, i)));
+                            prefixTable.put(prefix, SuffixArrayProto.indexInterval.newBuilder().addAllIndices(new ArrayList<>(Arrays.asList(startIndex, i))).build());
                         }
                     }
                     //update values
@@ -80,19 +74,21 @@ public class buildsa {
                     prefix = new_prefix;
                     i+=1;
                     first = false;
-                }
-                    
+                }          
             } else{ //save results and continue to next suffix (use short one as a placeholder)
-                prefixTable.put(prefix, new ArrayList<>(Arrays.asList(startIndex, i)));         
+                if (prefix.length()==k){
+                    prefixTable.put(prefix, SuffixArrayProto.indexInterval.newBuilder().addAllIndices(new ArrayList<>(Arrays.asList(startIndex, i))).build());   
+                } else {
+                    //Don't save just move on
+                } 
                 first = false;
                 prefix = genome.substring(suffixArray[i]);
                 startIndex = i;
                 i+=1; //skip to next suffix
-            }
-           
+            }         
         }
-        // save last prefix
-        prefixTable.put(prefix, new ArrayList<>(Arrays.asList(startIndex, i)));         
+        // save last prefix;     
+        prefixTable.put(prefix, SuffixArrayProto.indexInterval.newBuilder().addAllIndices(new ArrayList<>(Arrays.asList(startIndex, i))).build());    
         return prefixTable;
     }
 
@@ -153,46 +149,28 @@ public class buildsa {
         if (preftab){
             //create prefix table
             long prefixStartTime = System.nanoTime();
-            HashMap<String,ArrayList<Integer>> prefixTable = CreatePrefixTable(suffixArray, genome, k);	
+            Map<String,SuffixArrayProto.indexInterval> prefixTable = CreatePrefixTable(suffixArray, genome, k);	
             long prefixEndTime = System.nanoTime();
             long prefixDuration = (prefixEndTime-prefixStartTime);
             System.out.println("Constructing the prefix table took "+ prefixDuration);
-            
-            //save to protobuf
-            //convert values of prefix table to protobuf message
-            Iterable<Integer> iterIndex = () -> IntStream.of(prefixTable.values()).boxed().iterator();
+            // //save to protobuf
             messageBuilder.putAllPreftab(prefixTable);
         }
+        //save protobuf binary file
         try(FileOutputStream outputstream = new FileOutputStream(output)){
             messageBuilder.build().writeTo(outputstream);
             outputstream.close();    
         } catch (IOException e) {
             System.out.println(e);
         }
-        // test if it's right by reading and comparing
-        try (FileInputStream input = new FileInputStream(output)) {
-            SuffixArrayProto.SuffixMessage.Builder messageRead = SuffixArrayProto.SuffixMessage.newBuilder();
-            SuffixArrayProto.SuffixMessage mess = messageRead.mergeFrom(input).build();
-            System.out.println(mess.getSuffixArray(1));
-        } catch (IOException e) {
-            System.out.println(e);
-        }
+        // // test if it's right by reading and comparing
+        // try (FileInputStream input = new FileInputStream(output)) {
+        //     SuffixArrayProto.SuffixMessage.Builder messageRead = SuffixArrayProto.SuffixMessage.newBuilder();
+        //     SuffixArrayProto.SuffixMessage mess = messageRead.mergeFrom(input).build();
+        //     System.out.println(mess.getSuffixArray(1));
+        // } catch (IOException e) {
+        //     System.out.println(e);
+        // }
 
     }
-}    
-// public class buildsa {
-//     //read in genome https://rosettacode.org/wiki/FASTA_format#Java
-
-//     //build suffix array
-
-//     //write string and suffix array to binary file https://www.codejava.net/java-se/file-io/how-to-read-and-write-binary-files-in-java
-
-//     //build prefix table w/ parameter prefix length k
-
-//     //main
-
-//     // time function https://stackoverflow.com/questions/180158/how-do-i-time-a-methods-execution-in-java
-// }
-
-
-// //user javapackager
+}   

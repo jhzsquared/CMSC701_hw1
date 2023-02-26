@@ -136,7 +136,7 @@ public class buildsa {
         long startTime = System.nanoTime();
         final int[] suffixArray = SuffixArray.constructSuffixArray(s, maximum);	
         long endTime = System.nanoTime();
-        long duration = (endTime-startTime);
+        long duration = (endTime-startTime)/1000000;
         System.out.println("Constructing the suffix array took "+ duration);
         
         //Encode results to binary via protobuf

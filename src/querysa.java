@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.*;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 public class querysa {
     // read in binary string and suffix array (and maybe prefix table) 
@@ -74,11 +75,12 @@ public class querysa {
         return substring;
     }
     
+
     static List<Integer> naiveQuery(String query, String genome, List<Integer> suffixArray, Map<String,SuffixArrayProto.indexInterval> prefixTable){
         // naive binary search (if prefix table is not null then it will use it)
         List<Integer> hits = new ArrayList<Integer>();
         int l= 0;
-        int r = suffixArray.size();
+        int r = suffixArray.size()-1;
         int queryLength = query.length();
         int c = (int)Math.floor((l+r)/2);
         //start timing
@@ -129,7 +131,7 @@ public class querysa {
                 }   
                 //stop timing
                 long endTime = System.nanoTime();
-                long duration = (endTime-startTime);
+                long duration = (endTime-startTime)/1000000;
                 System.out.println("Query of "+ query.length() + " length took " + duration);
                 return hits;
                 
@@ -158,7 +160,7 @@ public class querysa {
         }
         int leftBound = l;
         //binary search for upper bound (might as well start at the left bound)
-        r = suffixArray.size();
+        r = suffixArray.size()-1;
         while (l<r){
             c = (int)Math.floor((l+r)/2);
             //check middle
@@ -176,14 +178,27 @@ public class querysa {
         }   
         //stop timing
         long endTime = System.nanoTime();
-        long duration = (endTime-startTime);
+        long duration = (endTime-startTime)/1000000;
         System.out.println("Query of "+ query.length() + " length took " + duration);
         return hits;
     }
+
+    static int getLCP(String a, String b){
+        //get length of longest common prefix between two strings
+        int minSize = Math.min(a.length(), b.length());
+        int i=0;
+        while (i<minSize && a.charAt(i)==b.charAt(i)){
+            i++;
+        }
+        String lcp = a.substring(0,i);
+        return lcp.length();
+    }
+
     static List<Integer> simpAccelQuery(String query, String genome, List<Integer> suffixArray, Map<String,SuffixArrayProto.indexInterval> prefixTable){
+        //use binary search with LCPs to skip some character comparisons
         List<Integer> hits = new ArrayList<Integer>();
         int l= 0;
-        int r = suffixArray.size();
+        int r = suffixArray.size()-1;
         int queryLength = query.length();
         int c = (int)Math.floor((l+r)/2);
         //start timing
@@ -200,30 +215,39 @@ public class querysa {
                 List<String> prefixList = new ArrayList<String>(prefixTable.keySet());
                 Collections.sort(prefixList); //lexicographically sort
                 l = 0;
-                r = prefixList.size();
+                r = prefixList.size()-1;
+                int lLcp = getLCP(getSubstring(prefixList.get(l), 0, queryLength), query);
+                int rLcp = getLCP(getSubstring(prefixList.get(r), 0, queryLength), query);
                 while (l< r){
                     c = (int)Math.floor((l+r)/2);
+                    int minLcp = Math.min(lLcp, rLcp);
                     //check middle
-                    if (getSubstring(prefixList.get(c), 0, queryLength).compareTo(query) >= 0){
+                    if (getSubstring(prefixList.get(c), minLcp, queryLength-minLcp).compareTo(query.substring(minLcp)) >= 0){
                         // query is  smaller or equal  to center substring
                         r = c; //left bisect
+                        rLcp = getLCP(getSubstring(prefixList.get(r), 0, queryLength), query);
                     } else{
                         //query is bigger than center
                         l = c+1;// right bisect
+                        lLcp = getLCP(getSubstring(prefixList.get(l), 0, queryLength), query);
                     }
                 }
                 int leftBound = l;
                 //binary search for upper bound (might as well start at the left bound)
-                r = prefixList.size();
+                r = prefixList.size()-1;
+                rLcp = getLCP(getSubstring(prefixList.get(r), 0, queryLength), query);
                 while (l<r){
-                    c = (int)Math.floor((l+r)/2);
+                    c = (int)Math.floor((l+r)/2); 
+                    int minLcp = Math.min(lLcp, rLcp);               
                     //check middle
-                    if (getSubstring(prefixList.get(c), 0, queryLength).compareTo(query) <= 0){
+                    if (getSubstring(prefixList.get(c), minLcp, queryLength-minLcp).compareTo(query.substring(minLcp)) <= 0){
                         // query is bigger or equal  to center substring
                         l = c+1; //right bisect
+                        lLcp = getLCP(getSubstring(prefixList.get(l), 0, queryLength), query);
                     } else{
                         //query is bigger than center
                         r = c;// right bisect
+                        rLcp = getLCP(getSubstring(prefixList.get(r), 0, queryLength), query);
                     }
                 }
                 // convert prefixtable hits to actual genome indices
@@ -234,7 +258,7 @@ public class querysa {
                 }   
                 //stop timing
                 long endTime = System.nanoTime();
-                long duration = (endTime-startTime);
+                long duration = (endTime-startTime)/1000000;
                 System.out.println("Query of "+ query.length() + " length took " + duration);
                 return hits;
                 
@@ -250,29 +274,38 @@ public class querysa {
             }
         }
         //binary search for lower bound
+        int lLcp = getLCP(getSubstring(genome, suffixArray.get(l).intValue(),queryLength), query);
+        int rLcp = getLCP(getSubstring(genome, suffixArray.get(r).intValue(),queryLength), query);
         while (l< r){
+            int minLcp = Math.min(lLcp, rLcp);
             c = (int)Math.floor((l+r)/2);
-            //check middle
-            if (getSubstring(genome, suffixArray.get(c).intValue(),queryLength).compareTo(query) >= 0){
+            //check middle shifting by minLCP number of characters
+            if (getSubstring(genome, suffixArray.get(c).intValue()+minLcp,queryLength-minLcp).compareTo(query.substring(minLcp)) >= 0){
                 // query is  smaller or equal  to center substring
                 r = c; //left bisect
+                rLcp = getLCP(getSubstring(genome, suffixArray.get(r).intValue(),queryLength), query);
             } else{
                 //query is bigger than center
                 l = c+1;// right bisect
+                lLcp = getLCP(getSubstring(genome, suffixArray.get(l).intValue(),queryLength), query);
             }
         }
         int leftBound = l;
         //binary search for upper bound (might as well start at the left bound)
-        r = suffixArray.size();
+        r = suffixArray.size()-1;
+        rLcp = getLCP(getSubstring(genome, suffixArray.get(r).intValue(),queryLength), query);
         while (l<r){
+            int minLcp = Math.min(lLcp, rLcp);
             c = (int)Math.floor((l+r)/2);
             //check middle
-            if (getSubstring(genome, suffixArray.get(c).intValue(),queryLength).compareTo(query) <= 0){
+            if (getSubstring(genome, suffixArray.get(c).intValue()+minLcp,queryLength-minLcp).compareTo(query.substring(minLcp)) <= 0){
                 // query is bigger or equal  to center substring
                 l = c+1; //right bisect
+                lLcp = getLCP(getSubstring(genome, suffixArray.get(l).intValue(),queryLength), query);
             } else{
                 //query is bigger than center
                 r = c;// right bisect
+                rLcp = getLCP(getSubstring(genome, suffixArray.get(r).intValue(),queryLength), query);
             }
         }
         // convert suffix Array hits to actual genome indices
@@ -281,14 +314,13 @@ public class querysa {
         }   
         //stop timing
         long endTime = System.nanoTime();
-        long duration = (endTime-startTime);
+        long duration = (endTime-startTime)/1000000;
         System.out.println("Query of "+ query.length() + " length took " + duration);
         return hits;
     }
 
     public static void main(String[] args) {
         String binPath, queryPath, queryMode, output;
-        boolean preftab;
         if (args.length==4){
             binPath = args[0]; //path to binary file
             queryPath = args[1]; //path to query fasta file
@@ -305,20 +337,44 @@ public class querysa {
         List<Integer> suffixArray = suffixMessage.getSuffixArrayList(); //suffixArray.get(i).intValue()
         Map<String,SuffixArrayProto.indexInterval> prefixTable = suffixMessage.getPreftabMap(); //prefixTable.get('pattern').getIndices(index)
         if (prefixTable.size()==0){
-            preftab = false;
+           System.out.println("No prefix table found nor used");
         } else {
-            preftab = true;
+            System.out.println("Prefix table found and used");
         }
        
         // read in fasta query
         Map<String,String> queries = ReadFastaQuery(queryPath);
-        //conduct query
-        for (Map.Entry<String, String> entry : queries.entrySet()){
-            List<Integer> queryResults = naiveQuery(entry.getValue(), genome, suffixArray, prefixTable);
-            System.out.println(queryResults);
+        //conduct query and write output to tab seperated file
+        try(FileWriter outputFile = new FileWriter(output)){
+            if (queryMode.equals("naive")){
+                System.out.println("Using naive query");
+                for (Map.Entry<String, String> entry : queries.entrySet()){
+                    List<Integer> queryResults = naiveQuery(entry.getValue(), genome, suffixArray, prefixTable);
+                    String outputLine = entry.getKey() + "\t" + queryResults.size() + "\t" + 
+                        queryResults.stream().map(Object::toString).collect(Collectors.joining("\t")) + "\n";
+                    outputFile.write(outputLine);
+                }
+                outputFile.close();
+            }else if (queryMode.equals("simpaccel")){
+                System.out.println("Using simple accelerant query")
+                for (Map.Entry<String, String> entry : queries.entrySet()){
+                    List<Integer> queryResults = naiveQuery(entry.getValue(), genome, suffixArray, prefixTable);
+                    String outputLine = entry.getKey() + "\t" + queryResults.size() + "\t" + 
+                        queryResults.stream().map(Object::toString).collect(Collectors.joining("\t")) + "\n";
+                    outputFile.write(outputLine);
+                }
+                outputFile.close();
+            } else{
+                outputFile.close();
+                System.out.println("invalid querymode presented, expecting naive or simpaccel");
+                System.exit(1);  
+            }
+        } catch (IOException e){
+            System.out.println("Files failed to write");
+            System.exit(1);
         }
+        
+        System.out.println("All queries complete and saved");
        
-
-        // save output
     }
 }

@@ -160,17 +160,9 @@ public class buildsa {
         try(FileOutputStream outputstream = new FileOutputStream(output)){
             messageBuilder.build().writeTo(outputstream);
             outputstream.close();    
+            System.out.println("File saved to " + output);
         } catch (IOException e) {
-            System.out.println(e);
+            System.out.println("Error "+ e);
         }
-        // // test if it's right by reading and comparing
-        // try (FileInputStream input = new FileInputStream(output)) {
-        //     SuffixArrayProto.SuffixMessage.Builder messageRead = SuffixArrayProto.SuffixMessage.newBuilder();
-        //     SuffixArrayProto.SuffixMessage mess = messageRead.mergeFrom(input).build();
-        //     System.out.println(mess.getSuffixArray(1));
-        // } catch (IOException e) {
-        //     System.out.println(e);
-        // }
-
     }
 }   

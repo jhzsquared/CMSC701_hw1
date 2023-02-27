@@ -12,4 +12,4 @@
 - https://www.tutorialspoint.com/protobuf/protobuf_nested_class.htm (nested protobuf message struggles)
 - https://www.cs.ucdavis.edu/~gusfield/cs224f11/suffarraynotes.pdf (simple accelerant)
 - https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java: protobuf-java-3.21.12.jar 
-https://ftp.ncbi.nih.gov/genomes/ 
+- https://ftp.ncbi.nih.gov/genomes/ 

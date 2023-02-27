@@ -44,6 +44,7 @@ public class buildsa {
             nIndex =  stringBuilder.indexOf("N", nIndex+1);
         }
         genome = stringBuilder.toString();
+        System.out.println("genome size is " + genome.length());
         return genome;
         
     }
@@ -136,7 +137,7 @@ public class buildsa {
         long startTime = System.nanoTime();
         final int[] suffixArray = SuffixArray.constructSuffixArray(s, maximum);	
         long endTime = System.nanoTime();
-        long duration = (endTime-startTime)/1000000;
+        long duration = (endTime-startTime);
         System.out.println("Constructing the suffix array took "+ duration);
         
         //Encode results to binary via protobuf

@@ -1,3 +1,4 @@
+//java -cp ":/home/jzhu/umd/CMSC701/hw1_suffixarray/lib/protobuf-java-3.21.12.jar" querysa /home/jzhu/umd/CMSC701/hw1_suffixarray/data/ecoli_sa.bin /home/jzhu/umd/CMSC701/hw1_suffixarray/data/fake_query.fa naive /home/jzhu/umd/CMSC701/hw1_suffixarray/data/query_output.bin
 import java.io.*;
 import java.util.*;
 import java.util.Collections;
@@ -131,7 +132,7 @@ public class querysa {
                 }   
                 //stop timing
                 long endTime = System.nanoTime();
-                long duration = (endTime-startTime)/1000000;
+                long duration = (endTime-startTime);
                 System.out.println("Query of "+ query.length() + " length took " + duration);
                 return hits;
                 
@@ -139,6 +140,9 @@ public class querysa {
                 //query is longer than prefix, proceed with standard search
                 String queryPrefix = query.substring(0, prefixLength);
                 if (prefixTable.get(queryPrefix)==null){
+                    long endTime = System.nanoTime();
+                    long duration = (endTime-startTime);
+                    System.out.println("Query of "+ query.length() + " length took " + duration);
                     return hits; //no matches if prefix can not be found
                 } else{
                     l = prefixTable.get(queryPrefix).getIndices(0);
@@ -178,7 +182,7 @@ public class querysa {
         }   
         //stop timing
         long endTime = System.nanoTime();
-        long duration = (endTime-startTime)/1000000;
+        long duration = (endTime-startTime);
         System.out.println("Query of "+ query.length() + " length took " + duration);
         return hits;
     }
@@ -258,7 +262,7 @@ public class querysa {
                 }   
                 //stop timing
                 long endTime = System.nanoTime();
-                long duration = (endTime-startTime)/1000000;
+                long duration = (endTime-startTime);
                 System.out.println("Query of "+ query.length() + " length took " + duration);
                 return hits;
                 
@@ -266,6 +270,9 @@ public class querysa {
                 //query is longer than prefix, proceed with standard search
                 String queryPrefix = query.substring(0, prefixLength);
                 if (prefixTable.get(queryPrefix)==null){
+                    long endTime = System.nanoTime();
+                    long duration = (endTime-startTime);
+                    System.out.println("Query of "+ query.length() + " length took " + duration);
                     return hits; //no matches if prefix can not be found
                 } else{
                     l = prefixTable.get(queryPrefix).getIndices(0);
@@ -314,7 +321,7 @@ public class querysa {
         }   
         //stop timing
         long endTime = System.nanoTime();
-        long duration = (endTime-startTime)/1000000;
+        long duration = (endTime-startTime);
         System.out.println("Query of "+ query.length() + " length took " + duration);
         return hits;
     }
@@ -356,7 +363,7 @@ public class querysa {
                 }
                 outputFile.close();
             }else if (queryMode.equals("simpaccel")){
-                System.out.println("Using simple accelerant query")
+                System.out.println("Using simple accelerant query");
                 for (Map.Entry<String, String> entry : queries.entrySet()){
                     List<Integer> queryResults = naiveQuery(entry.getValue(), genome, suffixArray, prefixTable);
                     String outputLine = entry.getKey() + "\t" + queryResults.size() + "\t" + 
